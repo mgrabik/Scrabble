@@ -8,3 +8,13 @@ Z:\Mati\test-aplikacji-okienkowej\WindowsAppForScrabbleTEST\ClassLibrary\obj\Deb
 Z:\Mati\test-aplikacji-okienkowej\WindowsAppForScrabbleTEST\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.csproj.CoreCompileInputs.cache
 Z:\Mati\test-aplikacji-okienkowej\WindowsAppForScrabbleTEST\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.dll
 Z:\Mati\test-aplikacji-okienkowej\WindowsAppForScrabbleTEST\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.pdb
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\bin\Debug\netcoreapp3.1\ClassLibrary.deps.json
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\bin\Debug\netcoreapp3.1\ClassLibrary.dll
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\bin\Debug\netcoreapp3.1\ClassLibrary.pdb
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.csproj.AssemblyReference.cache
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.GeneratedMSBuildEditorConfig.editorconfig
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.AssemblyInfoInputs.cache
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.AssemblyInfo.cs
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.csproj.CoreCompileInputs.cache
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.dll
+Z:\Mati\Praca\github\Scrabble\ClassLibrary\obj\Debug\netcoreapp3.1\ClassLibrary.pdb

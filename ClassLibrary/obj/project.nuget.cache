@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "jdVpetweZns9wYePiRx14jypg5UleP4GgBhF1mWfANVRxa8foukoCtRr9VMZqgxApvB1P8PH0Z+m6xM+TtxNEQ==",
+  "dgSpecHash": "+QNgM8nrincfEJ5LVSZeKEYna2pnClPe6n3uXwH1yaER88QXzlO/vfGGZ63O7ZPbd95R7j1r9RvpIVh+vyrC1w==",
   "success": true,
-  "projectFilePath": "Z:\\Mati\\test-aplikacji-okienkowej\\WindowsAppForScrabbleTEST\\ClassLibrary\\ClassLibrary.csproj",
+  "projectFilePath": "Z:\\Mati\\Praca\\github\\Scrabble\\ClassLibrary\\ClassLibrary.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

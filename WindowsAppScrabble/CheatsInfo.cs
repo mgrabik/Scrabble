@@ -44,7 +44,7 @@
                 var index = TextConverter.TextToNumber(combination[0].ToString());
 
                 string finded = WordsFinder.Find(combination, WordsReader.AllWords[index - 1]);
-                if (!finded.Equals("No words was find"))
+                if (!finded.Equals(WordsFinder.noWords))
                 {
                     PossibleWords[finded] = Counter.Points(finded);
                 }
@@ -52,7 +52,7 @@
             }
         }
 
-        private void xxx(object sender, EventArgs e)
+        private void refresh(object sender, EventArgs e)
         {
             //Clear labels
             this.labelword3.Text = "";

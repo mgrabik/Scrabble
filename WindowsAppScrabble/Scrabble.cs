@@ -23,11 +23,13 @@
         List<int> ids = new List<int>();
         List<Tuple<int, int>> pairs = new List<Tuple<int, int>>(); // Column-Row
         char[,] playersLetters = new char[4, 7];
-        List<string> stackedWords = new List<string>();
+
+        List<(int, int)> tempCoord = new List<(int, int)>();
+        List<List<(int, int)>> WordsCoordinates = new List<List<(int, int)>>();
 
         private int letterChosenCounter = 0;
-        public static bool cheatIsOpen = false;
         private bool firstMove = true;
+        public static bool cheatIsOpen = false;
 
         // Color definitions
         private Color RedColor =  Color.FromArgb(255, 77, 77);
@@ -109,11 +111,12 @@
             var cell = sender as ScrabbleCell;
             try
             {
-                if (!cell.IsClicked && chosenLetters.Count != 0 && chosenLetters[ids[0] - 1] != null)
+                if (!cell.IsClicked && chosenLetters.Count != 0 && chosenLetters[ids[0] - 1] != null && cell.Letter == "")
                 {
                     chosenLetters[ids[0]-1].BackColor = RedColor;
                     cell.BackColor = OrangeColor;
                     cell.Text = chosenLetters[ids[0]-1].Text;
+                    cell.Letter = chosenLetters[ids[0] - 1].Text;
                     cell.ID = chosenLetters[ids[0]-1].ID;
                     cell.IsClicked = true;
                     cell.Countable = false;
@@ -139,6 +142,7 @@
                     chosenLetters[clickedCell - 1].BackColor = OrangeColor;
                     cell.BackColor = BackgroundColor;
                     cell.Text = "";
+                    cell.Letter = "";
                     cell.IsClicked = false;
                     cell.Countable = true;
 
@@ -244,7 +248,7 @@
             char[] chars = new char[7];
             for (int i = 0; i < 7; i++)
             {
-                chars[i] = Convert.ToChar(yourCells[i, 0].Text);
+                chars[i] = Convert.ToChar(yourCells[i, 0].Letter);
             }
 
             cheatsInfo.Listing(new string(chars));
@@ -282,16 +286,14 @@
             for (int i = 0; i < 7; i++)
             {
                 yourCells[i, 0].Text = playersLetters[0, i].ToString();
+                yourCells[i, 0].Letter = playersLetters[0, i].ToString();
                 yourCells[i, 0].ID = Guid.NewGuid().ToString("N");
             }
         }
         private void confirmEvent(object sender, EventArgs e)
         {
-            int wordBonus = 1;
-            int letterBonus;
-            int pointsPerRound = 0;
-            bool isVertical = false;
-            string wordToCheck = "";
+            int letterBonus, wordBonus = 1, pointsPerRound = 0;
+            bool areWordsCorrect, isVertical = false;
 
             if (firstMove && !cells[7, 7].IsClicked)
             {
@@ -300,6 +302,11 @@
             }
             try
             {
+                if (pairs.Count == 1)
+                {
+                    goto Jump;
+                }
+
                 //Sorting the tuple
                 if (pairs[0].Item2 == pairs[1].Item2)
                 {
@@ -316,26 +323,18 @@
                     MessageBox.Show("Words are misspelled!\nCorret it!", "Warning!");
                     return;
                 }
-                if(!firstMove) checkCorrectness(pairs[0].Item1, pairs[0].Item2);
 
+                Jump:
 
                 if (isVertical)
                 {
-                    int col = pairs[0].Item1;
-                    for (int i = pairs[0].Item2; i <= pairs[pairs.Count() - 1].Item2; i++)
-                    {
-                        wordToCheck += cells[col, i].Text.ToCharArray()[0];
-                    }
+                    areWordsCorrect = checkCreatedWordsWhenVertical(pairs[0].Item1, pairs[0].Item2);
                 }
                 else
                 {
-                    int row = pairs[0].Item2;
-                    for (int i = pairs[0].Item1; i <= pairs[pairs.Count() - 1].Item1; i++)
-                    {
-                        wordToCheck += cells[i, row].Text.ToCharArray()[0];
-                    }
+                    areWordsCorrect = checkCreatedWordsWhenHorizontal(pairs[0].Item1, pairs[0].Item2);
                 }
-                if (!WordsFinder.CheckWord(new string(wordToCheck)))
+                if (!areWordsCorrect)
                 {
                     MessageBox.Show("Your word does not exist!\nCorret it!", "Warning!");
                     return;
@@ -343,48 +342,46 @@
             }
             catch(ArgumentOutOfRangeException)
             {
-                MessageBox.Show("Exception handled", "Warning!");
+                MessageBox.Show("ArgumentOutOfRangeException handled", "Warning!");
                 return;
             }
 
-            
-
-            //Score points
-            for (int col = 0; col < 15; col++)
+            // Count points of provided word
+            foreach (var coord in tempCoord)
             {
-                for (int row = 0; row < 15; row++)
-                {
-                    if (cells[col, row].IsClicked)
-                    {
-                        letterBonus = 1;
-                        //Searching for Letter Bonus
-                        if (cells[col, row].Bonus == Bonus.DoubleLetter)
-                        {
-                            letterBonus = 2;
-                        }
-                        if (cells[col, row].Bonus == Bonus.TripleLetter)
-                        {
-                            letterBonus = 3;
-                        }
+                letterBonus = 1;
 
-                        //Searching for Word Bonus
-                        if (cells[col, row].Bonus == Bonus.DoubleWord)
-                        {
-                            wordBonus *= 2;
-                        }
-                        if (cells[col, row].Bonus == Bonus.TripleWord)
-                        {
-                            wordBonus *= 3;
-                        }
+                letterBonus = getLetterBonus(cells[coord.Item1, coord.Item2].Bonus);
+                wordBonus = getWordBonus(cells[coord.Item1, coord.Item2].Bonus);
 
-                        pointsPerRound += countPoints(col, row, letterBonus);
-                        cells[col, row].IsClicked = false;
-                    }
-                }
+                pointsPerRound += ListofPoints.LetterPoints[cells[coord.Item1, coord.Item2].Letter] * letterBonus;
             }
             pointsPerRound *= wordBonus;
 
-            //Main Board
+            letterBonus = 1;
+            wordBonus = 1;
+            // Count points of additional words
+            foreach (var list in WordsCoordinates)
+            {
+                int wordsPoints = 0;
+                foreach (var coord in list)
+                {
+                    // Get bonuses only on provided letters. The bonuses on earlier provided letters do not matter.
+                    if (!cells[coord.Item1, coord.Item2].Countable)
+                    {
+                        letterBonus = getLetterBonus(cells[coord.Item1, coord.Item2].Bonus);
+                        wordBonus = getWordBonus(cells[coord.Item1, coord.Item2].Bonus);
+                    }
+                    wordsPoints += ListofPoints.LetterPoints[cells[coord.Item1, coord.Item2].Letter] * letterBonus;
+                }
+                wordsPoints *= wordBonus;
+                pointsPerRound += wordsPoints;
+            }
+
+            // Save data about points
+            PointsInGame.PlayerPoints[PointsInGame.currentPlayer - 1] += pointsPerRound;
+
+            // Update the main board
             foreach (var pair in pairs)
             {
                 cells[pair.Item1, pair.Item2].Unknown = false;
@@ -393,12 +390,12 @@
                 cells[pair.Item1, pair.Item2].BackColor = Color.FromArgb(255, 219, 77);
             }
 
-            //Player's panel
+            // Player's panel
             for (int col = 0; col < 7; col++)
             {
                 int row = 0;
 
-                //Genering new letters
+                // Genering new letters
                 if (yourCells[col, row].IsClicked)
                 {
                     yourCells[col, row].BackColor = BackgroundColor;
@@ -419,9 +416,6 @@
                 }
             }
 
-            //Save data about points
-            PointsInGame.PlayerPoints[PointsInGame.currentPlayer - 1] += pointsPerRound;
-
             // Update points labels
             this.lblPlayer1Points.Text = PointsInGame.PlayerPoints[0].ToString();
             this.lblPlayer2Points.Text = PointsInGame.PlayerPoints[1].ToString();
@@ -433,7 +427,7 @@
             updatePlayerPanel();
 
 
-            //Return to default value
+            // Return to default value
             chosenLetters.Clear();
             letterChosenCounter = 0;
             pairs.Clear();
@@ -442,132 +436,197 @@
             MessageBox.Show("It is Player "+ PointsInGame.currentPlayer.ToString()+"'s turn", "Next Round!");
             firstMove = false;
         }
-        private void checkCorrectness(int col, int row)
+        private int getLetterBonus(Bonus bonus)
         {
-            List<string> word = new List<string>();
-            int i = 1;
-            word.Add(cells[col, row].Text);
-            //Left
-            while (col - i >= 0 && cells[col - i, row].Text != "" && cells[col - i, row].Countable)
+            if (bonus == Bonus.DoubleLetter)
             {
-                word.Insert(0, cells[col - i, row].Text);
-                i++;
+                return 2;
             }
-            i = 1;
-            while (cells[col + i, row].Text != "" && cells[col + i, row].Countable)
+            else if (bonus == Bonus.TripleLetter)
             {
-                word.Add(cells[col + i, row].Text);
-                i++;
+                return 3;
             }
-            if(word.Count != 1)
+            else
             {
-                stackedWords.Add(merge(word));
+                return 1;
             }
-            //Up
-            i = 1;
-            while (row - i >= 0 && cells[col, row - i].Text != "" && cells[col, row - i].Countable)
-            {
-                word.Insert(0, cells[col, row - i].Text);
-                i++;
-            }
-            i = 1;
-            while (cells[col, row + i].Text != "" && cells[col, row + i].Countable)
-            {
-                word.Add(cells[col, row + i].Text);
-                i++;
-            }
-
-
         }
-        private int countPoints(int col, int row, int letterBonus)
+        private int getWordBonus(Bonus bonus)
         {
-            List<string> word = new List<string>();
-            int points = 0;
-            //Score points for single letter
-            points += ListofPoints.LetterPoints[cells[col, row].Text] * letterBonus;
-
-            //Searching for neabry words
-            //left
-            if (col - 1 >= 0 && cells[col - 1, row].Text != "" && cells[col - 1, row].Countable)
+            if (bonus == Bonus.DoubleWord)
             {
-                points += ListofPoints.LetterPoints[cells[col - 1, row].Text];
-                cells[col - 1, row].Countable = false;
-                pairs.Add(new Tuple<int, int>(col - 1, row));
-                for (int i = 2; col - i >= 0; i++)
-                {
-                    if (cells[col - i, row].Text != "" && cells[col - i, row].Countable)
-                    {
-                        points += ListofPoints.LetterPoints[cells[col - i, row].Text];
-                    }
-                    else break;
-                }
+                return 2;
             }
-            //right
-            if (col + 1 < 15 && cells[col + 1, row].Text != "" && cells[col + 1, row].Countable)
+            else if (bonus == Bonus.TripleWord)
             {
-                points += ListofPoints.LetterPoints[cells[col + 1, row].Text];
-                cells[col + 1, row].Countable = false;
-                pairs.Add(new Tuple<int, int>(col + 1, row));
-                for (int i = 2; col + i < 15; i++)
-                {
-                    if (cells[col + i, row].Text != "" && cells[col + i, row].Countable)
-                    {
-                        points += ListofPoints.LetterPoints[cells[col + i, row].Text];
-                    }
-                    else break;
-                }
+                return 3;
             }
-            //bottom
-            if (row + 1 < 15 && cells[col, row + 1].Text != "" && cells[col, row + 1].Countable)
+            else
             {
-                points += ListofPoints.LetterPoints[cells[col, row + 1].Text];
-                cells[col, row + 1].Countable = false;
-                pairs.Add(new Tuple<int, int>(col, row + 1));
-                for (int i = 2; i + row < 15; i++)
-                {
-                    if (cells[col, row + i].Text != "" && cells[col, row + i].Countable)
-                    {
-                        points += ListofPoints.LetterPoints[cells[col, row + i].Text];
-                    }
-                    else break;
-                }
+                return 1;
             }
-            //top
-            if (row - 1 >= 0 && cells[col, row - 1].Text != "" && cells[col, row - 1].Countable)
-            {
-                points += ListofPoints.LetterPoints[cells[col, row - 1].Text];
-                cells[col, row - 1].Countable = false;
-                pairs.Add(new Tuple<int, int>(col, row - 1));
-                for (int i = 2; row - i >= 0; i++)
-                {
-                    if (cells[col, row - i].Text != "" && cells[col, row + i].Countable)
-                    {
-                        points += ListofPoints.LetterPoints[cells[col, row - i].Text];
-                    }
-                    else break;
-                }
-            }
-            return points;
         }
+        private bool checkCreatedWordsWhenVertical(int col, int row) // arguments are first pair in sorted tuple
+        {
+            int end = row + pairs.Count;
+            tempCoord.Clear();
+            WordsCoordinates.Clear();
+            int i, position = 0;
+            while (row < end)
+            {
+                WordsCoordinates.Add(new List<(int, int)>());
+                if (cells[col, row].Letter != "")
+                {
+                    tempCoord.Add((col, row));
+                    WordsCoordinates[position].Add((col, row));
+                }
+                //Up
+                i = 1;
+                while (row - i >= 0 && cells[col, row - i].Letter != "" && cells[col, row - i].Countable)
+                {
+                    tempCoord.Insert(0, (col, row - i));
+                    i++;
+                }
+                //Down
+                i = 1;
+                while (row + i <= 14 && cells[col, row + i].Letter != "" && cells[col, row + i].Countable)
+                {
+                    tempCoord.Add((col, row + i));
+                    i++;
+                }
+                //Left
+                i = 1;
+                while (col - i >= 0 && cells[col - i, row].Text != "" && cells[col - i, row].Countable)
+                {
+                    WordsCoordinates[position].Insert(0, (col - i, row));
+                    i++;
+                }
+                //Right
+                i = 1;
+                while (col + i <= 14 && cells[col + i, row].Text != "" && cells[col + i, row].Countable)
+                {
+                    WordsCoordinates[position].Add((col + i, row));
+                    i++;
+                }
+                row++;
+                position++;
+            }
+            tempCoord = tempCoord.Distinct().ToList();
+            tempCoord.Sort((x, y) => x.Item2.CompareTo(y.Item2));
+            for (int x = 0; x < WordsCoordinates.Count(); x++)
+            {
+                if (WordsCoordinates[x].Count() <= 1)
+                {
+                    WordsCoordinates.RemoveAt(x);
+                    x--;
+                    continue;
+                }
+                WordsCoordinates[x] = WordsCoordinates[x].Distinct().ToList();
+            }
 
+            if (!WordsFinder.CheckWord(getWord(tempCoord)))
+            {
+                return false;
+            }
+            foreach (var list in WordsCoordinates)
+            {
+                if (!WordsFinder.CheckWord(getWord(list)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        private bool checkCreatedWordsWhenHorizontal(int col, int row) // arguments are first pair in sorted tuple
+        {
+            int end = col + pairs.Count;
+            tempCoord.Clear();
+            WordsCoordinates.Clear();
+            int i, position = 0;
+            while (col < end)
+            {
+                WordsCoordinates.Add(new List<(int, int)>());
+                if (cells[col, row].Letter != "")
+                {
+                    tempCoord.Add((col, row));
+                    WordsCoordinates[position].Add((col, row));
+                }
+                //Left
+                i = 1;
+                while (col - i >= 0 && cells[col - i, row].Text != "" && cells[col - i, row].Countable)
+                {
+                    tempCoord.Insert(0, (col - i, row));
+                    i++;
+                }
+                //Right
+                i = 1;
+                while (col + i <= 14 && cells[col + i, row].Text != "" && cells[col + i, row].Countable)
+                {
+                    tempCoord.Add((col + i, row));
+                    i++;
+                }
+                //Up
+                i = 1;
+                while (row - i >= 0 && cells[col, row - i].Letter != "" && cells[col, row - i].Countable)
+                {
+                    WordsCoordinates[position].Insert(0, (col, row - i));
+                    i++;
+                }
+                //Down
+                i = 1;
+                while (row + i <= 14 && cells[col, row + i].Letter != "" && cells[col, row + i].Countable)
+                {
+                    WordsCoordinates[position].Add((col, row + i));
+                    i++;
+                }
+                col++;
+                position++;
+            }
+            tempCoord = tempCoord.Distinct().ToList();
+            tempCoord.Sort((x, y) => x.Item1.CompareTo(y.Item1));
+            for (int x = 0; x < WordsCoordinates.Count(); x++)
+            {
+                if (WordsCoordinates[x].Count() <= 1)
+                {
+                    WordsCoordinates.RemoveAt(x);
+                    x--;
+                    continue;
+                }
+                WordsCoordinates[x] = WordsCoordinates[x].Distinct().ToList();
+            }
+
+            if (!WordsFinder.CheckWord(getWord(tempCoord)))
+            {
+                return false;
+            }
+            foreach (var list in WordsCoordinates)
+            {
+                if (!WordsFinder.CheckWord(getWord(list)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        private string getWord(List<(int, int)> coordinates)
+        {
+            string word = "";
+            foreach (var XY in coordinates)
+            {
+                word += cells[XY.Item1, XY.Item2].Letter;
+            }
+            return word;
+        }
         private void updatePlayerPanel()
         {
             int row = 0;
             for (int col = 0; col < 7; col++)
             {
-                yourCells[col, row].Text = playersLetters[PointsInGame.currentPlayer - 1, col].ToString();
+                string tempLetter = playersLetters[PointsInGame.currentPlayer - 1, col].ToString();
+                yourCells[col, row].Letter = tempLetter;
+                yourCells[col, row].Text = tempLetter;
             }
-        }
-        private string merge(List<string> letters)
-        {
-            string result = "";
-            for (int i = 0; i < letters.Count(); i++)
-            {
-                result += letters[i];
-            }
-            return result;
-        }
-        
+        }    
         private void rulesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show("Coming soon!", "...");

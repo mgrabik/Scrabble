@@ -8,6 +8,7 @@
         public string ID { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
+        public string Letter { get; set; } = "";
         public bool Unknown { get; set; }
         public bool Countable { get; set; }
         public Bonus Bonus {  get; set; }
