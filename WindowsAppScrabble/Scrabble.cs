@@ -326,6 +326,12 @@
 
                 Jump:
 
+                if (!isWordProvidedCorrectly(isVertical))
+                {
+                    MessageBox.Show("Words are misspelled!\nCorret it!", "Warning!");
+                    return;
+                }
+
                 if (isVertical)
                 {
                     areWordsCorrect = checkCreatedWordsWhenVertical(pairs[0].Item1, pairs[0].Item2);
@@ -465,6 +471,33 @@
             {
                 return 1;
             }
+        }
+        private bool isWordProvidedCorrectly(bool isVertical)
+        {
+            if (isVertical)
+            {
+                int col = pairs[0].Item1;
+                for (int row = pairs[0].Item2; row < pairs.Last().Item2; row++)
+                {
+                    if (cells[col, row].Letter == "")
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                int row = pairs[0].Item2;
+                for (int col = pairs[0].Item1; col < pairs.Last().Item1; col++)
+                {
+                    if (cells[col, row].Letter == "")
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+            
         }
         private bool checkCreatedWordsWhenVertical(int col, int row) // arguments are first pair in sorted tuple
         {
